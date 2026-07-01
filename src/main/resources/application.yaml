@@ -1,3 +1,15 @@
 spring:
   application:
     name: person-crud
+
+  mongodb:
+    uri: mongodb://username:password@localhost:27017/person_crud?authSource=admin
+
+server:
+  port: 8080
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs
