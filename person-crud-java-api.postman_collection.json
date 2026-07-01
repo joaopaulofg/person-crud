@@ -1,0 +1,704 @@
+{
+  "info": {
+    "_postman_id": "8f77b979-1f9b-4c4c-93fb-person-crud-java",
+    "name": "Person CRUD Java API",
+    "description": "Collection Postman para testar a API Person CRUD Java.\n\nBase URL padrão:\n{{baseUrl}} = http://localhost:8080/api/v1\n\nEndpoints contemplados:\n- Criar pessoa\n- Listar pessoas com paginação\n- Filtrar por nome, e-mail e CPF\n- Buscar por ID\n- Atualizar pessoa com PUT\n- Atualizar parcialmente com PATCH\n- Substituir endereços\n- Substituir telefones\n- Deletar pessoa\n\nA collection salva automaticamente o ID da pessoa criada na variável de coleção `personId`.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "personId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Persons",
+      "item": [
+        {
+          "name": "Create Person",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Response has person id', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.id).to.exist;",
+                  "    pm.collectionVariables.set('personId', json.id);",
+                  "});",
+                  "",
+                  "pm.test('Response email is normalized', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.email).to.eql('joao.silva@email.com');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"João\",\n  \"lastName\": \"Silva\",\n  \"email\": \"joao.silva@email.com\",\n  \"documentNumber\": \"529.982.247-25\",\n  \"dateOfBirth\": \"1998-05-20\",\n  \"addresses\": [\n    {\n      \"street\": \"Rua das Flores\",\n      \"number\": \"100\",\n      \"complement\": \"Apto 202\",\n      \"neighborhood\": \"Centro\",\n      \"city\": \"Fortaleza\",\n      \"state\": \"CE\",\n      \"zipCode\": \"60000-000\"\n    }\n  ],\n  \"phoneNumbers\": [\n    {\n      \"number\": \"(85) 99999-9999\",\n      \"type\": \"personal\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/persons",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "persons"
+              ]
+            },
+            "description": "Cria uma nova pessoa. O CPF usado é válido para teste e será normalizado pelo backend."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Person - Invalid CPF",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Validation error mentions CPF', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(JSON.stringify(json)).to.include('CPF');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"João\",\n  \"lastName\": \"Silva\",\n  \"email\": \"cpf.invalido@email.com\",\n  \"documentNumber\": \"12345678900\",\n  \"dateOfBirth\": \"1998-05-20\",\n  \"addresses\": [],\n  \"phoneNumbers\": []\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/persons",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "persons"
+              ]
+            },
+            "description": "Request propositalmente inválido para testar a validação customizada de CPF."
+          },
+          "response": []
+        },
+        {
+          "name": "List Persons - Paginated",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response is paginated', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('content');",
+                  "    pm.expect(json).to.have.property('page');",
+                  "    pm.expect(json).to.have.property('size');",
+                  "    pm.expect(json).to.have.property('totalElements');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/persons?page=0&size=10&sortBy=createdAt&direction=desc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "persons"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "createdAt"
+                },
+                {
+                  "key": "direction",
+                  "value": "desc"
+                }
+              ]
+            },
+            "description": "Lista pessoas com paginação e ordenação."
+          },
+          "response": []
+        },
+        {
+          "name": "List Persons - Filter by Name",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/persons?name=joao&page=0&size=10&sortBy=firstName&direction=asc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "persons"
+              ],
+              "query": [
+                {
+                  "key": "name",
+                  "value": "joao"
+                },
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "firstName"
+                },
+                {
+                  "key": "direction",
+                  "value": "asc"
+                }
+              ]
+            },
+            "description": "Filtra pessoas pelo nome ou sobrenome."
+          },
+          "response": []
+        },
+        {
+          "name": "List Persons - Filter by Email",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/persons?email=gmail.com&page=0&size=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "persons"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "gmail.com"
+                },
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Filtra pessoas por trecho do e-mail."
+          },
+          "response": []
+        },
+        {
+          "name": "List Persons - Filter by CPF",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/persons?documentNumber=529.982.247-25&page=0&size=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "persons"
+              ],
+              "query": [
+                {
+                  "key": "documentNumber",
+                  "value": "529.982.247-25"
+                },
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Filtra pessoas por CPF. O backend deve normalizar o valor recebido."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Person by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response id matches variable', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.id).to.eql(pm.collectionVariables.get('personId'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/persons/{{personId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "persons",
+                "{{personId}}"
+              ]
+            },
+            "description": "Busca uma pessoa pelo ID salvo na variável `personId`."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Person - PUT",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Last name was updated', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.lastName).to.eql('Silva Atualizado');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"João\",\n  \"lastName\": \"Silva Atualizado\",\n  \"email\": \"joao.silva.atualizado@email.com\",\n  \"documentNumber\": \"529.982.247-25\",\n  \"dateOfBirth\": \"1998-05-20\",\n  \"addresses\": [\n    {\n      \"street\": \"Rua das Flores\",\n      \"number\": \"100\",\n      \"complement\": \"Apto 202\",\n      \"neighborhood\": \"Centro\",\n      \"city\": \"Fortaleza\",\n      \"state\": \"CE\",\n      \"zipCode\": \"60000-000\"\n    }\n  ],\n  \"phoneNumbers\": [\n    {\n      \"number\": \"(85) 99999-9999\",\n      \"type\": \"personal\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/persons/{{personId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "persons",
+                "{{personId}}"
+              ]
+            },
+            "description": "Atualiza os dados da pessoa pelo ID."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Person - PATCH",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Email was patched', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.email).to.eql('joao.patch@email.com');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"joao.patch@email.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/persons/{{personId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "persons",
+                "{{personId}}"
+              ]
+            },
+            "description": "Atualização parcial de uma pessoa."
+          },
+          "response": []
+        },
+        {
+          "name": "Replace Addresses",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Addresses were replaced', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.addresses).to.be.an('array');",
+                  "    pm.expect(json.addresses.length).to.eql(1);",
+                  "    pm.expect(json.addresses[0].street).to.eql('Av. Santos Dumont');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"street\": \"Av. Santos Dumont\",\n    \"number\": \"1500\",\n    \"complement\": \"Sala 1001\",\n    \"neighborhood\": \"Aldeota\",\n    \"city\": \"Fortaleza\",\n    \"state\": \"CE\",\n    \"zipCode\": \"60150-160\"\n  }\n]"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/persons/{{personId}}/addresses",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "persons",
+                "{{personId}}",
+                "addresses"
+              ]
+            },
+            "description": "Substitui completamente a lista de endereços da pessoa."
+          },
+          "response": []
+        },
+        {
+          "name": "Replace Phone Numbers",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Phone numbers were replaced', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.phoneNumbers).to.be.an('array');",
+                  "    pm.expect(json.phoneNumbers.length).to.eql(2);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"number\": \"(85) 98888-7777\",\n    \"type\": \"whatsapp\"\n  },\n  {\n    \"number\": \"(85) 3333-2222\",\n    \"type\": \"comercial\"\n  }\n]"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/persons/{{personId}}/phone-numbers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "persons",
+                "{{personId}}",
+                "phone-numbers"
+              ]
+            },
+            "description": "Substitui completamente a lista de telefones da pessoa."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Person",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 204', function () {",
+                  "    pm.response.to.have.status(204);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/persons/{{personId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "persons",
+                "{{personId}}"
+              ]
+            },
+            "description": "Remove a pessoa pelo ID salvo na variável `personId`."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Person by ID - Not Found",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 404', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/persons/{{personId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "persons",
+                "{{personId}}"
+              ]
+            },
+            "description": "Depois de executar o DELETE, este request deve retornar 404."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Documentation",
+      "item": [
+        {
+          "name": "Swagger UI",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/swagger-ui.html",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "swagger-ui.html"
+              ]
+            },
+            "description": "Abre a documentação Swagger da API."
+          },
+          "response": []
+        },
+        {
+          "name": "OpenAPI JSON",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/v3/api-docs",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "v3",
+                "api-docs"
+              ]
+            },
+            "description": "Retorna a especificação OpenAPI em JSON."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
