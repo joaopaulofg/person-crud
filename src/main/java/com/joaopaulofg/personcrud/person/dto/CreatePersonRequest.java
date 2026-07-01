@@ -1,5 +1,6 @@
 package com.joaopaulofg.personcrud.person.dto;
 
+import com.joaopaulofg.personcrud.shared.validation.Cpf;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -24,7 +25,8 @@ public record CreatePersonRequest(
         @Email(message = "E-mail inválido")
         String email,
 
-        @NotBlank(message = "Documento é obrigatório")
+        @NotBlank(message = "CPF é obrigatório")
+        @Cpf
         String documentNumber,
 
         @NotNull(message = "Data de nascimento é obrigatória")

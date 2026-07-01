@@ -1,5 +1,6 @@
 package com.joaopaulofg.personcrud.person.dto;
 
+import com.joaopaulofg.personcrud.shared.validation.Cpf;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Past;
@@ -19,6 +20,7 @@ public record UpdatePersonRequest(
         @Email(message = "E-mail inválido")
         String email,
 
+        @Cpf
         String documentNumber,
 
         @Past(message = "Data de nascimento deve estar no passado")
