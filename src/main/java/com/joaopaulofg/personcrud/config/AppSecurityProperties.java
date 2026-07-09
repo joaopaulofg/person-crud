@@ -1,4 +1,11 @@
 package com.joaopaulofg.personcrud.config;
 
-public class AppSecurityProperties {
+import org.springframework.boot.context.properties.ConfigurationProperties;
+
+@ConfigurationProperties(prefix = "app.security")
+public record AppSecurityProperties(
+        String apiKey,
+        String jwtSecret,
+        long jwtExpirationMinutes
+) {
 }

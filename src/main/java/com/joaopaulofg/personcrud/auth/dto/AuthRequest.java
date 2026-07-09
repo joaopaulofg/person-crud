@@ -1,4 +1,10 @@
 package com.joaopaulofg.personcrud.auth.dto;
 
-public class AuthRequest {
+import jakarta.validation.constraints.NotBlank;
+
+public record AuthRequest(
+
+        @NotBlank(message = "API Key é obrigatória")
+        String apiKey
+) {
 }
