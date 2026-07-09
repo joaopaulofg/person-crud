@@ -12,5 +12,12 @@ services:
     volumes:
       - mongodb_data:/data/db
 
+  redis:
+    image: redis:7
+    container_name: person-crud-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
 volumes:
   mongodb_data:
