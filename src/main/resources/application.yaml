@@ -2,6 +2,13 @@ spring:
   application:
     name: person-crud
 
+  data:
+    mongodb:
+      auto-index-creation: true
+
+    redis:
+      host: localhost
+      port: 6379
   mongodb:
     uri: mongodb://username:password@localhost:27017/person_crud?authSource=admin
 
@@ -13,3 +20,9 @@ springdoc:
     path: /swagger-ui.html
   api-docs:
     path: /v3/api-docs
+
+app:
+  security:
+    api-key: person-crud-api-key-123
+    jwt-secret: 1f0b4d9e2a3c5b7d8e9f0123456789abcdef123456789abcdef987654321abcd
+    jwt-expiration-minutes: 60
