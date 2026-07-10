@@ -9,6 +9,12 @@ spring:
     redis:
       host: localhost
       port: 6379
+
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: username
+    password: password
   mongodb:
     uri: mongodb://username:password@localhost:27017/person_crud?authSource=admin
 
@@ -26,3 +32,8 @@ app:
     api-key: person-crud-api-key-123
     jwt-secret: 1f0b4d9e2a3c5b7d8e9f0123456789abcdef123456789abcdef987654321abcd
     jwt-expiration-minutes: 60
+
+  messaging:
+    request-log-exchange: person-crud.request-log.exchange
+    request-log-queue: person-crud.request-log.queue
+    request-log-routing-key: person-crud.request-log.created

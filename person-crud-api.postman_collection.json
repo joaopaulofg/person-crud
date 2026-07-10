@@ -1,8 +1,8 @@
 {
   "info": {
     "_postman_id": "8f77b979-1f9b-4c4c-93fb-person-crud-java",
-    "name": "Person CRUD Java API",
-    "description": "Collection Postman para testar a API Person CRUD Java.\n\nBase URL padrão:\n{{baseUrl}} = http://localhost:8080/api/v1\n\nEndpoints contemplados:\n- Criar pessoa\n- Listar pessoas com paginação\n- Filtrar por nome, e-mail e CPF\n- Buscar por ID\n- Atualizar pessoa com PUT\n- Atualizar parcialmente com PATCH\n- Substituir endereços\n- Substituir telefones\n- Deletar pessoa\n\nA collection salva automaticamente o ID da pessoa criada na variável de coleção `personId`.",
+    "name": "Person CRUD Java API - Fase 4 Async Logs",
+    "description": "Collection Postman para testar a API Person CRUD Java até a Fase 4.\n\nFluxo recomendado:\n1. Execute Auth / Validate API Key\n2. O token será salvo automaticamente em {{accessToken}}\n3. Execute requests da pasta Persons para gerar logs\n4. Execute Logs / List Request Logs para consultar os logs persistidos\n5. Opcionalmente execute Auth / Logout para revogar o token no Redis\n\nVariáveis:\n- baseUrl = http://localhost:8080/api/v1\n- apiKey = person-crud-api-key-123\n- accessToken = preenchido automaticamente após autenticação\n- personId = preenchido automaticamente após criar pessoa\n\nFase 4 adicionada:\n- GET /logs\n- GET /logs?page=0&size=10\n- GET /logs?page=0&size=5\n",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "event": [
@@ -11,7 +11,11 @@
       "script": {
         "type": "text/javascript",
         "exec": [
-          ""
+          "// Fluxo sugerido:",
+          "// 1. Auth / Validate API Key",
+          "// 2. Persons / List Persons - Paginated ou Create Person",
+          "// 3. Logs / List Request Logs - Paginated",
+          "// 4. Auth / Logout"
         ]
       }
     },
@@ -35,9 +39,295 @@
       "key": "personId",
       "value": "",
       "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "apiKey",
+      "value": "person-crud-api-key-123",
+      "type": "string"
     }
   ],
   "item": [
+    {
+      "name": "Auth",
+      "description": "Autenticação com API Key, JWT e Redis.",
+      "item": [
+        {
+          "name": "Validate API Key",
+          "auth": {
+            "type": "noauth"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Save access token', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.accessToken).to.exist;",
+                  "    pm.expect(json.tokenType).to.eql('Bearer');",
+                  "    pm.collectionVariables.set('accessToken', json.accessToken);",
+                  "});",
+                  "",
+                  "pm.test('Expires in was returned', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.expiresIn).to.be.a('number');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"apiKey\": \"{{apiKey}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/validate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "validate"
+              ]
+            },
+            "description": "Valida a API Key, gera o JWT, salva no Redis e armazena em {{accessToken}}."
+          },
+          "response": []
+        },
+        {
+          "name": "Validate API Key - Invalid",
+          "auth": {
+            "type": "noauth"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 401', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"apiKey\": \"invalid-key\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/validate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "validate"
+              ]
+            },
+            "description": "Testa uma API Key inválida. Esperado: 401."
+          },
+          "response": []
+        },
+        {
+          "name": "Protected Endpoint Without Token",
+          "auth": {
+            "type": "noauth"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 401', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/persons?page=0&size=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "persons"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Tenta acessar /persons sem JWT. Esperado: 401."
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "auth": {
+            "type": "bearer",
+            "bearer": [
+              {
+                "key": "token",
+                "value": "{{accessToken}}",
+                "type": "string"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 204', function () {",
+                  "    pm.response.to.have.status(204);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "logout"
+              ]
+            },
+            "description": "Revoga o token atual no Redis. Depois disso, gere outro token para continuar testando."
+          },
+          "response": []
+        },
+        {
+          "name": "Access With Current Token",
+          "auth": {
+            "type": "bearer",
+            "bearer": [
+              {
+                "key": "token",
+                "value": "{{accessToken}}",
+                "type": "string"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200 or 401 depending on token state', function () {",
+                  "    pm.expect([200, 401]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/persons?page=0&size=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "persons"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Use para conferir rapidamente se o token atual em {{accessToken}} ainda é aceito."
+          },
+          "response": []
+        }
+      ]
+    },
     {
       "name": "Persons",
       "item": [
@@ -647,6 +937,250 @@
           },
           "response": []
         }
+      ],
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{accessToken}}",
+            "type": "string"
+          }
+        ]
+      },
+      "description": "Requests protegidos. Execute Auth / Validate API Key antes para preencher {{accessToken}}."
+    },
+    {
+      "name": "Logs",
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{accessToken}}",
+            "type": "string"
+          }
+        ]
+      },
+      "description": "Consulta logs assíncronos capturados pelo filtro HTTP, publicados no RabbitMQ e persistidos no MongoDB.",
+      "item": [
+        {
+          "name": "List Request Logs - Default",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response is paginated', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('content');",
+                  "    pm.expect(json).to.have.property('page');",
+                  "    pm.expect(json).to.have.property('size');",
+                  "    pm.expect(json).to.have.property('totalElements');",
+                  "    pm.expect(json).to.have.property('totalPages');",
+                  "});",
+                  "",
+                  "pm.test('Content is an array', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.content).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/logs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "logs"
+              ]
+            },
+            "description": "Lista logs usando os valores padrão do backend."
+          },
+          "response": []
+        },
+        {
+          "name": "List Request Logs - Paginated",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Page metadata is valid', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.page).to.eql(0);",
+                  "    pm.expect(json.size).to.eql(10);",
+                  "    pm.expect(json.content).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test('Log item shape is valid when content exists', function () {",
+                  "    const json = pm.response.json();",
+                  "    if (json.content.length > 0) {",
+                  "        const log = json.content[0];",
+                  "        pm.expect(log).to.have.property('id');",
+                  "        pm.expect(log).to.have.property('requestTime');",
+                  "        pm.expect(log).to.have.property('responseTime');",
+                  "        pm.expect(log).to.have.property('durationMs');",
+                  "        pm.expect(log).to.have.property('method');",
+                  "        pm.expect(log).to.have.property('path');",
+                  "        pm.expect(log).to.have.property('statusCode');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/logs?page=0&size=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "logs"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Lista logs com paginação explícita."
+          },
+          "response": []
+        },
+        {
+          "name": "List Request Logs - Small Page",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Size is 5', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.size).to.eql(5);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/logs?page=0&size=5",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "logs"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "5"
+                }
+              ]
+            },
+            "description": "Lista logs com página menor para testar paginação."
+          },
+          "response": []
+        },
+        {
+          "name": "List Request Logs Without Token - Should Fail",
+          "auth": {
+            "type": "noauth"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 401', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/logs?page=0&size=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "logs"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Tenta consultar logs sem JWT. Esperado: 401 Unauthorized."
+          },
+          "response": []
+        }
       ]
     },
     {
@@ -670,7 +1204,10 @@
             },
             "description": "Abre a documentação Swagger da API."
           },
-          "response": []
+          "response": [],
+          "auth": {
+            "type": "noauth"
+          }
         },
         {
           "name": "OpenAPI JSON",
@@ -696,9 +1233,15 @@
             },
             "description": "Retorna a especificação OpenAPI em JSON."
           },
-          "response": []
+          "response": [],
+          "auth": {
+            "type": "noauth"
+          }
         }
-      ]
+      ],
+      "auth": {
+        "type": "noauth"
+      }
     }
   ]
 }
